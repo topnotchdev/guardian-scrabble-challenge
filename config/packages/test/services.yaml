@@ -1,0 +1,7 @@
+services:
+  _defaults:
+    public: true
+
+  app.service.game_management:
+    alias: App\Service\GameManagementService
+    public: true
