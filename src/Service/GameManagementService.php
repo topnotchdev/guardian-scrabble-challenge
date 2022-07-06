@@ -50,6 +50,10 @@ class GameManagementService
 
     private array $dictionary = [];
     private ParameterBagInterface $parameterBag;
+    /**
+     * @var array|mixed
+     */
+    private $wordPermutations = [];
 
     /**
      * @throws \Exception
@@ -140,6 +144,32 @@ class GameManagementService
         return in_array($word, $wordsBeginningWithChar);
     }
 
+    public function generateWordsFromGivenLetters(array $letters, $returnFirstWordOnly = false): array
+    {
+        $foundWords = [];
+
+        $lettersCount = count($letters);
+
+        $possibleEnglishWords = [];
+
+        for ($i = $lettersCount; $i > 0; $i--) {
+            $possibleEnglishWords[$i] = $this->generateWordPermutationsFromCharArray($letters);
+            unset($letters[$i]);
+        }
+
+        foreach ($possibleEnglishWords as $noOfChars => $possibleWords) {
+            foreach ($possibleWords as $word) {
+                if ($this->isValidWord($word)) {
+                    $foundWords[] = $word;
+                    if ($returnFirstWordOnly) {
+                        break(2);
+                    }
+                }
+            }
+        }
+
+        return $foundWords;
+    }
 
     //********************* Private Methods ***********************//
     /***************************************************************/
@@ -170,5 +200,22 @@ class GameManagementService
         }
 
         return $extraction;
+    }
+
+    private function generateWordPermutationsFromCharArray(array $letters, $perms = [])
+    {
+        if (empty($letters)) {
+            $this->wordPermutations[] = strtolower( implode('', $perms) );
+        } else {
+            for ($i = count($letters) - 1; $i >= 0; --$i) {
+                $newLetters = $letters;
+                $newPerms = $perms;
+                list($char) = array_splice($newLetters, $i, 1);
+                array_unshift($newPerms, $char);
+                $this->generateWordPermutationsFromCharArray($newLetters, $newPerms);
+            }
+        }
+
+        return $this->wordPermutations;
     }
 }

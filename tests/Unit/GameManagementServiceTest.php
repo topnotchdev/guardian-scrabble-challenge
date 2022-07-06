@@ -176,15 +176,26 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         self::assertFalse($this->gameManagementService->isValidWord($nonsenseWord));
     }
 
+    /**
+     * @throws \Exception
+     */
+    public function testItCanGenerateAValidWordFromGivenTiles()
+    {
+        $ourLetters = $this->gameManagementService->chooseRandomLetters(7);
+        $firstValidWord = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
+        dd($ourLetters, $firstValidWord);
+    }
+
     //********************* Private Methods ***********************//
     /***************************************************************/
 
     /**
      * @param $needle
      * @param array $haystack
-     * @return mixed
+     * @param string $currentKey
+     * @return false|string
      */
-    private function array_search_r($needle, array $haystack, $currentKey = '')
+    private function array_search_r($needle, array $haystack, string $currentKey = '')
     {
         foreach($haystack as $key => $value) {
             if (is_array($value)) {
