@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+
 class GameManagementService
 {
     const LETTER_SCORES = [
@@ -43,6 +45,40 @@ class GameManagementService
         2 => ['B', 'C', 'M', 'P', 'F', 'H', 'V', 'W', 'Y'],
         1 => ['K', 'J', 'X', 'Q', 'Z'],
     ];
+
+    const ALPHA_ONLY_REGEX = "/^[a-zA-Z]+$/";
+
+    private array $dictionary = [];
+    private ParameterBagInterface $parameterBag;
+
+    /**
+     * @throws \Exception
+     */
+    public function __construct(ParameterBagInterface $parameterBag)
+    {
+        $this->parameterBag = $parameterBag;
+        $this->init();
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function init()
+    {
+        // load dictionary words from file
+        $DS = DIRECTORY_SEPARATOR;
+        $filename = $this->parameterBag->get('kernel.project_dir') . $DS .  'public' . $DS . 'data' . $DS . 'dictionary.txt';
+
+        if (!file_exists($filename)) {
+            throw new \Exception('This service is temporarily unavailable due to a missing dependency!');
+        }
+
+        $fileLines = file($filename, FILE_IGNORE_NEW_LINES);
+
+        foreach (array_keys(self::LETTER_SCORES) as $letter) {
+            $this->dictionary[$letter] = $this->extractWordsBeginningWith($fileLines, $letter);
+        }
+    }
 
     public function fetchLetterScoresConfig(): array
     {
@@ -89,5 +125,50 @@ class GameManagementService
         }
 
         return $chosenLetters;
+    }
+
+    public function isValidWord(string $input): bool
+    {
+        if (!$this->hasAlphabeticalCharsOnly($input)) {
+            return false;
+        }
+
+        $word = strtolower($input);
+        $firstCharOfInput = strtoupper($this->getCharAtIndex($input, 0));
+
+        $wordsBeginningWithChar = $this->dictionary[$firstCharOfInput]; // we don't need the whole dictionary
+        return in_array($word, $wordsBeginningWithChar);
+    }
+
+
+    //********************* Private Methods ***********************//
+    /***************************************************************/
+
+    private function hasAlphabeticalCharsOnly(string $input): bool
+    {
+        $match = preg_match(self::ALPHA_ONLY_REGEX, $input);
+        return (bool) $match;
+    }
+
+    private function getCharAtIndex(string $input, int $index)
+    {
+        $wordChars = str_split($input, 1);
+        return $wordChars[$index];
+    }
+
+    private function extractWordsBeginningWith(array $words, string $character): array
+    {
+        $extraction = [];
+        $character = strtolower($character);
+        foreach ($words as $word) {
+            if(strpos( $word, $character ) === 0){
+                $extraction[] = $word;
+            }
+            if (strpos( $word, $character ) !== 0 && count($extraction)) { // because the list in alphabetical order
+                break;
+            }
+        }
+
+        return $extraction;
     }
 }
