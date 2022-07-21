@@ -181,9 +181,9 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
      */
     public function testItCanGenerateAValidWordFromGivenTiles()
     {
-        $ourLetters = $this->gameManagementService->chooseRandomLetters(7);
+        $ourLetters = ["L","G","U","W","Q","T","Z"];
         $firstValidWord = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
-        dd($ourLetters, $firstValidWord);
+        self::assertEquals("lug", $firstValidWord[0]);
     }
 
     //********************* Private Methods ***********************//
