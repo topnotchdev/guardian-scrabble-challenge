@@ -182,8 +182,19 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
     public function testItCanGenerateAValidWordFromGivenTiles()
     {
         $ourLetters = ["L","G","U","W","Q","T","Z"];
-        $firstValidWord = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
-        self::assertEquals("lug", $firstValidWord[0]);
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
+        self::assertEquals("lug", $validWords[0]);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function testItFindsLongestValidWordFromGivenTiles()
+    {
+        $ourLetters = ["I","W","T","H","E","E","R"];
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, false);
+        dd($validWords);
+        self::assertEquals("lug", $validWords[0]);
     }
 
     //********************* Private Methods ***********************//

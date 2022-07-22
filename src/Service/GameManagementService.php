@@ -146,29 +146,37 @@ class GameManagementService
 
     public function generateWordsFromGivenLetters(array $letters, $returnFirstWordOnly = false): array
     {
-        $foundWords = [];
-
         $lettersCount = count($letters);
-
-        $possibleEnglishWords = [];
+        $varyingCountUnvalidatedWordPermutations = [];
 
         for ($i = $lettersCount; $i > 0; $i--) {
-            $possibleEnglishWords[$i] = $this->generateWordPermutationsFromCharArray($letters);
-            unset($letters[$i]);
-        }
-
-        foreach ($possibleEnglishWords as $noOfChars => $possibleWords) {
-            foreach ($possibleWords as $word) {
-                if ($this->isValidWord($word)) {
-                    $foundWords[] = $word;
-                    if ($returnFirstWordOnly) {
-                        break(2);
-                    }
-                }
+            $useLetters = array_slice($letters, 0, $i);
+            $varyingCountUnvalidatedWordPermutations[$i . '-letters'] = $this->getReArrangedLetterArraySets($useLetters);
+            if ($i !== $lettersCount) {
+                $otherPerms = $this->rotateLettersAndFindNewPerms($useLetters, $letters[$i]);
+                $varyingCountUnvalidatedWordPermutations[$i . '-letters'] = array_merge($varyingCountUnvalidatedWordPermutations[$i . '-letters'], $otherPerms);
             }
         }
 
-        return $foundWords;
+        foreach ($varyingCountUnvalidatedWordPermutations['5-letters'] as $letters) {
+            $word = implode('', $letters);
+            echo PHP_EOL. $word;
+        }
+        die;
+
+        $validWords = [];
+
+        foreach ($varyingCountUnvalidatedWordPermutations as $key => $varyingCountUnvalidatedWordPermutation) {
+            $formedWords = [];
+            foreach ($varyingCountUnvalidatedWordPermutation as $charArray) {
+                $formedWords[] = implode('',$charArray);
+            }
+            $validWords[$key][] = $this->extractValidWordsFromList($formedWords, $returnFirstWordOnly);
+        }
+
+        dd($validWords);
+
+        return $validWords;
     }
 
     //********************* Private Methods ***********************//
@@ -184,6 +192,39 @@ class GameManagementService
     {
         $wordChars = str_split($input, 1);
         return $wordChars[$index];
+    }
+
+    private function generateWordPermutationsFromCharArray(array $letters, $perms = [])
+    {
+        if (empty($letters)) {
+            $this->wordPermutations[] = strtolower( implode('', $perms) );
+        } else {
+            for ($i = count($letters) - 1; $i >= 0; --$i) {
+                $newLetters = $letters;
+                $newPerms = $perms;
+                list($char) = array_splice($newLetters, $i, 1);
+                array_unshift($newPerms, $char);
+                $this->generateWordPermutationsFromCharArray($newLetters, $newPerms);
+            }
+        }
+
+        return $this->wordPermutations;
+    }
+
+    private function extractValidWordsFromList(array $possibleEnglishWords, bool $returnFirstWordOnly = false): array
+    {
+        $foundWords = [];
+
+        foreach ($possibleEnglishWords as $possibleWord) {
+            if ($this->isValidWord($possibleWord) && !in_array($possibleWord, $foundWords)) {
+                $foundWords[] = $possibleWord;
+                if ($returnFirstWordOnly) {
+                    break;
+                }
+            }
+        }
+
+        return $foundWords;
     }
 
     private function extractWordsBeginningWith(array $words, string $character): array
@@ -202,20 +243,48 @@ class GameManagementService
         return $extraction;
     }
 
-    private function generateWordPermutationsFromCharArray(array $letters, $perms = [])
+    private function getReArrangedLetterArraySets(array $letters): array
     {
-        if (empty($letters)) {
-            $this->wordPermutations[] = strtolower( implode('', $perms) );
-        } else {
-            for ($i = count($letters) - 1; $i >= 0; --$i) {
-                $newLetters = $letters;
-                $newPerms = $perms;
-                list($char) = array_splice($newLetters, $i, 1);
-                array_unshift($newPerms, $char);
-                $this->generateWordPermutationsFromCharArray($newLetters, $newPerms);
+        $sets = [];
+
+        unset($this->wordPermutations);
+
+        $fullLengthStringSet = $this->generateWordPermutationsFromCharArray($letters);
+
+        foreach ($fullLengthStringSet as $string) {
+            $sets[] = str_split($string);
+        }
+
+        return $sets;
+    }
+
+    private function rotateLettersAndFindNewPerms(array $useLetters, string $removedLetter): array
+    {
+        $otherPerms = [];
+
+        unset($this->wordPermutations);
+
+        foreach ($useLetters as $key => $letter) {
+            // the last element of the $useLetter array with last element in $droppedLetters
+            $swapLetters[$key] = $removedLetter;
+            $newLetters = array_replace($useLetters, $swapLetters);
+            $removedLetter = $newRemovedLetter = $letter;
+            $otherPerms[] = $this->getReArrangedLetterArraySets($newLetters);
+        }
+
+        return $this->flattenResults($otherPerms);
+    }
+
+    private function flattenResults(array $elements): array
+    {
+        $results = [];
+
+        foreach ($elements as $innerElements) {
+            foreach ($innerElements as $letterSet) {
+                $results[] = $letterSet;
             }
         }
 
-        return $this->wordPermutations;
+        return $results;
     }
 }
