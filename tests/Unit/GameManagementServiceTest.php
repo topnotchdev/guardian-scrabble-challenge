@@ -8,7 +8,7 @@ use ReflectionClass;
 
 class GameManagementServiceTest extends BaseConsoleApplicationTestClass
 {
-    const CORRECT_SCORES = [
+    public const CORRECT_SCORES = [
         1 => ['E', 'A', 'I', 'O', 'N', 'R', 'T', 'L', 'S', 'U'],
         2 => ['D', 'G'],
         3 => ['B', 'C', 'M', 'P'],
@@ -114,7 +114,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         $word1 = 'peac£';
         $word2 = 'peace';
 
-        $method = self::getMethod('hasAlphabeticalCharsOnly');;
+        $method = self::getMethod('hasAlphabeticalCharsOnly');
         $assertion1 = $method->invokeArgs($this->gameManagementService, [$word1]);
         self::assertFalse($assertion1);
         $assertion2 = $method->invokeArgs($this->gameManagementService, [$word2]);
@@ -130,7 +130,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         $word = 'figure';
         $expectedChar = 'u';
 
-        $method = self::getMethod('getCharAtIndex');;
+        $method = self::getMethod('getCharAtIndex');
         $actualChar = $method->invokeArgs($this->gameManagementService, [$word, $index]);
         self::assertEquals($expectedChar, $actualChar);
     }
@@ -159,7 +159,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         ];
         $startChar = 'F';
 
-        $method = self::getMethod('extractWordsBeginningWith');;
+        $method = self::getMethod('extractWordsBeginningWith');
         $extractedWords = $method->invokeArgs($this->gameManagementService, [$words, $startChar]);
         self::assertCount(7, $extractedWords);
     }
@@ -208,14 +208,13 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
      */
     private function array_search_r($needle, array $haystack, string $currentKey = '')
     {
-        foreach($haystack as $key => $value) {
+        foreach ($haystack as $key => $value) {
             if (is_array($value)) {
-                $nextKey = $this->array_search_r($needle,$value, $currentKey . '[' . $key . ']');
+                $nextKey = $this->array_search_r($needle, $value, $currentKey . '[' . $key . ']');
                 if ($nextKey) {
                     return $nextKey;
                 }
-            }
-            elseif($value === $needle) {
+            } elseif ($value === $needle) {
                 return is_numeric($key)
                     ? $currentKey . '[' .$key . ']'
                     : $currentKey . '["' .$key . '"]';

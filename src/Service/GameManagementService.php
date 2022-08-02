@@ -6,7 +6,7 @@ use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GameManagementService
 {
-    const LETTER_SCORES = [
+    public const LETTER_SCORES = [
         'A' => 1,
         'B' => 3,
         'C' => 3,
@@ -35,7 +35,7 @@ class GameManagementService
         'Z' => 10,
     ];
 
-    const LETTER_COUNTS = [
+    public const LETTER_COUNTS = [
         12 => ['E'],
         9 => ['A', 'I'],
         8 => ['O'],
@@ -46,7 +46,7 @@ class GameManagementService
         1 => ['K', 'J', 'X', 'Q', 'Z'],
     ];
 
-    const ALPHA_ONLY_REGEX = "/^[a-zA-Z]+$/";
+    public const ALPHA_ONLY_REGEX = "/^[a-zA-Z]+$/";
 
     private array $dictionary = [];
     private ParameterBagInterface $parameterBag;
@@ -113,7 +113,9 @@ class GameManagementService
      */
     public function chooseRandomLetters(int $noOfLetters): array
     {
-        if (!$noOfLetters) throw new \Exception('You cannot pass zero / null as the number of letters to return!');
+        if (!$noOfLetters) {
+            throw new \Exception('You cannot pass zero / null as the number of letters to return!');
+        }
 
         $letters = array_keys(self::LETTER_SCORES);
         $chosenLetters = [];
@@ -169,7 +171,7 @@ class GameManagementService
         foreach ($varyingCountUnvalidatedWordPermutations as $key => $varyingCountUnvalidatedWordPermutation) {
             $formedWords = [];
             foreach ($varyingCountUnvalidatedWordPermutation as $charArray) {
-                $formedWords[] = implode('',$charArray);
+                $formedWords[] = implode('', $charArray);
             }
             $validWords[$key][] = $this->extractValidWordsFromList($formedWords, $returnFirstWordOnly);
         }
@@ -197,7 +199,7 @@ class GameManagementService
     private function generateWordPermutationsFromCharArray(array $letters, $perms = [])
     {
         if (empty($letters)) {
-            $this->wordPermutations[] = strtolower( implode('', $perms) );
+            $this->wordPermutations[] = strtolower(implode('', $perms));
         } else {
             for ($i = count($letters) - 1; $i >= 0; --$i) {
                 $newLetters = $letters;
@@ -232,10 +234,10 @@ class GameManagementService
         $extraction = [];
         $character = strtolower($character);
         foreach ($words as $word) {
-            if(strpos( $word, $character ) === 0){
+            if (strpos($word, $character) === 0) {
                 $extraction[] = $word;
             }
-            if (strpos( $word, $character ) !== 0 && count($extraction)) { // because the list in alphabetical order
+            if (strpos($word, $character) !== 0 && count($extraction)) { // because the list in alphabetical order
                 break;
             }
         }
