@@ -16,3 +16,5 @@
 
 /tools/php-cs-fixer/vendor/
 /.php-cs-fixer.cache
+/*.tmp
+/tmp.txt
