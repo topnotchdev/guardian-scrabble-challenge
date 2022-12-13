@@ -153,32 +153,49 @@ class GameManagementService
 
         for ($i = $lettersCount; $i > 0; $i--) {
             $useLetters = array_slice($letters, 0, $i);
-            $varyingCountUnvalidatedWordPermutations[$i . '-letters'] = $this->getReArrangedLetterArraySets($useLetters);
-            if ($i !== $lettersCount) {
-                $otherPerms = $this->rotateLettersAndFindNewPerms($useLetters, $letters[$i]);
-                $varyingCountUnvalidatedWordPermutations[$i . '-letters'] = array_merge($varyingCountUnvalidatedWordPermutations[$i . '-letters'], $otherPerms);
-            }
+            $varyingCountUnvalidatedWordPermutations[$i . '-letters'] = $this->getReArrangedLetterArraySets($useLetters); /** TODO: See below. This returns perms as letter arrays */
         }
-
-        foreach ($varyingCountUnvalidatedWordPermutations['5-letters'] as $letters) {
-            $word = implode('', $letters);
-            echo PHP_EOL. $word;
-        }
-        die;
 
         $validWords = [];
 
+        // TODO: There may be something wrong here. We had strings which we broke up into character arrays and now we are piecing them back to strings??? See starred above!
         foreach ($varyingCountUnvalidatedWordPermutations as $key => $varyingCountUnvalidatedWordPermutation) {
+//            echo "Key: [$key]" . PHP_EOL;
             $formedWords = [];
             foreach ($varyingCountUnvalidatedWordPermutation as $charArray) {
-                $formedWords[] = implode('', $charArray);
+                $formedWords[] = implode('', $charArray); // glue character array pieces back together
             }
             $validWords[$key][] = $this->extractValidWordsFromList($formedWords, $returnFirstWordOnly);
         }
 
-        dd($validWords);
+        return $this->flattenMultiLengthWordsArray($validWords);
+    }
 
-        return $validWords;
+    public function getLongestWordFromLetterSet(array $letters): string
+    {
+        $foundWords = $this->generateWordsFromGivenLetters($letters);
+        $foundWordsLengthKeys = [];
+        foreach ($foundWords as $foundWord) {
+            $foundWordsLengthKeys[$foundWord] = strlen($foundWord);
+        }
+        $letterCountBiggestWord = max(array_values($foundWordsLengthKeys));
+        return array_search($letterCountBiggestWord, $foundWordsLengthKeys);
+    }
+
+    public function flattenMultiLengthWordsArray(array $elements): array
+    {
+        $singleLevelElements = [];
+        foreach ($elements as $element) {
+            if (!is_array($element)) {
+                $singleLevelElements[] = $element;
+                continue;
+            }
+
+            $foundArrayElements = $this->flattenMultiLengthWordsArray($element);
+            $singleLevelElements = array_merge($singleLevelElements, $foundArrayElements);
+        }
+
+        return $singleLevelElements;
     }
 
     //********************* Private Methods ***********************//
@@ -252,41 +269,16 @@ class GameManagementService
         unset($this->wordPermutations);
 
         $fullLengthStringSet = $this->generateWordPermutationsFromCharArray($letters);
+        $cachedStrings = [];
 
         foreach ($fullLengthStringSet as $string) {
+            if (in_array($string, $cachedStrings)) {
+                continue;
+            }
+            $cachedStrings[] = $string;
             $sets[] = str_split($string);
         }
 
         return $sets;
-    }
-
-    private function rotateLettersAndFindNewPerms(array $useLetters, string $removedLetter): array
-    {
-        $otherPerms = [];
-
-        unset($this->wordPermutations);
-
-        foreach ($useLetters as $key => $letter) {
-            // the last element of the $useLetter array with last element in $droppedLetters
-            $swapLetters[$key] = $removedLetter;
-            $newLetters = array_replace($useLetters, $swapLetters);
-            $removedLetter = $newRemovedLetter = $letter;
-            $otherPerms[] = $this->getReArrangedLetterArraySets($newLetters);
-        }
-
-        return $this->flattenResults($otherPerms);
-    }
-
-    private function flattenResults(array $elements): array
-    {
-        $results = [];
-
-        foreach ($elements as $innerElements) {
-            foreach ($innerElements as $letterSet) {
-                $results[] = $letterSet;
-            }
-        }
-
-        return $results;
     }
 }

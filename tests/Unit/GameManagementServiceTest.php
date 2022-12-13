@@ -5,6 +5,7 @@ namespace App\Tests\Unit;
 use App\Service\GameManagementService;
 use App\Tests\BaseConsoleApplicationTestClass;
 use ReflectionClass;
+use function PHPUnit\Framework\assertCount;
 
 class GameManagementServiceTest extends BaseConsoleApplicationTestClass
 {
@@ -186,15 +187,44 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         self::assertEquals("lug", $validWords[0]);
     }
 
+    public function testItCanFlattenMultiLevelArray()
+    {
+        $array = [
+            'a',
+            'b',
+            'c' => [
+                'd',
+                'e',
+                'f',
+            ],
+        ];
+
+        $flattenedArray = $this->gameManagementService->flattenMultiLengthWordsArray($array);
+
+        self::assertTrue(!isset($flattenedArray['c']));
+        self::assertCount(5, $flattenedArray);
+        self::assertEquals('f', $flattenedArray[4]);
+    }
+
+    public function testItCanFindAllValidWordsFromGivenTiles()
+    {
+        $ourLetters = ["I","W","T","H","E","E","R"];
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters);
+        self::assertCount(6, $validWords);
+        foreach ($validWords as $validWord) {
+            self::assertTrue($this->gameManagementService->isValidWord($validWord));
+        }
+    }
+
     /**
      * @throws \Exception
      */
     public function testItFindsLongestValidWordFromGivenTiles()
     {
         $ourLetters = ["I","W","T","H","E","E","R"];
-        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, false);
-        dd($validWords);
-        self::assertEquals("lug", $validWords[0]);
+        $longestWord = $this->gameManagementService->getLongestWordFromLetterSet($ourLetters);
+        self::assertEquals(7, strlen($longestWord));
+        self::assertEquals('thewier', $longestWord);
     }
 
     //********************* Private Methods ***********************//
