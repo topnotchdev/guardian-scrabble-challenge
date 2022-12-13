@@ -18,3 +18,8 @@
 /.php-cs-fixer.cache
 /*.tmp
 /tmp.txt
+
+###> phpunit/phpunit ###
+/phpunit.xml
+.phpunit.result.cache
+###< phpunit/phpunit ###
