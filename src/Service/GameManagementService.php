@@ -149,23 +149,20 @@ class GameManagementService
     public function generateWordsFromGivenLetters(array $letters, $returnFirstWordOnly = false): array
     {
         $lettersCount = count($letters);
-        $varyingCountUnvalidatedWordPermutations = [];
 
-        for ($i = $lettersCount; $i > 0; $i--) {
-            $useLetters = array_slice($letters, 0, $i);
-            $varyingCountUnvalidatedWordPermutations[$i . '-letters'] = $this->getReArrangedLetterArraySets($useLetters); /** TODO: See below. This returns perms as letter arrays */
-        }
+        $varyingCountDictionaryWords = $this->loadDictionaryWordsUpToLengthX($lettersCount);
+        $invalidatedStringPermutations = $this->makeCharacterArraySimpleStrings($this->getReArrangedLetterArraySets($letters));
 
         $validWords = [];
 
-        // TODO: There may be something wrong here. We had strings which we broke up into character arrays and now we are piecing them back to strings??? See starred above!
-        foreach ($varyingCountUnvalidatedWordPermutations as $key => $varyingCountUnvalidatedWordPermutation) {
-//            echo "Key: [$key]" . PHP_EOL;
-            $formedWords = [];
-            foreach ($varyingCountUnvalidatedWordPermutation as $charArray) {
-                $formedWords[] = implode('', $charArray); // glue character array pieces back together
+        foreach ($varyingCountDictionaryWords as $key => $xLengthDictionaryWords) {
+            foreach ($xLengthDictionaryWords as $word) {
+                $validWords[$key]= $this->extractWordsContaining($invalidatedStringPermutations, $word);
             }
-            $validWords[$key][] = $this->extractValidWordsFromList($formedWords, $returnFirstWordOnly);
+            if ($key === '6-letter-words') {
+                die('stop');
+                //dd($validWords);
+            }
         }
 
         return $this->flattenMultiLengthWordsArray($validWords);
@@ -230,32 +227,28 @@ class GameManagementService
         return $this->wordPermutations;
     }
 
-    private function extractValidWordsFromList(array $possibleEnglishWords, bool $returnFirstWordOnly = false): array
+    private function extractWordsBeginningWith(array $strings, string $characters): array
     {
-        $foundWords = [];
+        $extraction = [];
+        $characters = strtolower($characters);
 
-        foreach ($possibleEnglishWords as $possibleWord) {
-            if ($this->isValidWord($possibleWord) && !in_array($possibleWord, $foundWords)) {
-                $foundWords[] = $possibleWord;
-                if ($returnFirstWordOnly) {
-                    break;
-                }
+        foreach ($strings as $string) {
+            if (strpos($string, $characters) === 0) {
+                $extraction[] = $string;
             }
         }
 
-        return $foundWords;
+        return $extraction;
     }
 
-    private function extractWordsBeginningWith(array $words, string $character): array
+    private function extractWordsContaining(array $strings, string $characters): array
     {
         $extraction = [];
-        $character = strtolower($character);
-        foreach ($words as $word) {
-            if (strpos($word, $character) === 0) {
-                $extraction[] = $word;
-            }
-            if (strpos($word, $character) !== 0 && count($extraction)) { // because the list in alphabetical order
-                break;
+        $characters = strtolower($characters);
+
+        foreach ($strings as $string) {
+            if (strpos($string, $characters) !== false && !in_array($string, $extraction)) {
+                $extraction[] = $string;
             }
         }
 
@@ -280,5 +273,42 @@ class GameManagementService
         }
 
         return $sets;
+    }
+
+    private function loadDictionaryWordsUpToLengthX(int $lettersCount): array
+    {
+        $dictionaryWords = [];
+        for ($i = $lettersCount; $i > 0; $i--) {
+            // get $i letter words from dictionary
+            $dictionaryWords[$i . '-letter-words'] = $this->fetchWordsOfLengthFromDictionary($i);
+        }
+
+        return $dictionaryWords;
+    }
+
+    private function fetchWordsOfLengthFromDictionary(int $stringLength): array
+    {
+        $foundWords = [];
+
+        foreach ($this->dictionary as $letter => $letterWords) {
+            foreach ($letterWords as $word) {
+                if (strlen($word) !== $stringLength) {
+                    continue;
+                }
+                $foundWords[] = $word;
+            }
+        }
+
+        return $foundWords;
+    }
+
+    private function makeCharacterArraySimpleStrings(array $characterSequenceArray): array
+    {
+        $strings = [];
+        foreach ($characterSequenceArray as $characterSequence) {
+            $strings[] = implode("", $characterSequence);
+        }
+;
+        return $strings;
     }
 }

@@ -30,7 +30,6 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         static::bootKernel();
         $container = static::getContainer();
 
-        /** @var GameManagementService gameManagementService */
         $this->gameManagementService = $container->get('app.service.game_management');
     }
 
@@ -187,6 +186,9 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         self::assertEquals("lug", $validWords[0]);
     }
 
+    /**
+     * @return void
+     */
     public function testItCanFlattenMultiLevelArray()
     {
         $array = [
@@ -206,6 +208,9 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         self::assertEquals('f', $flattenedArray[4]);
     }
 
+    /**
+     * @return void
+     */
     public function testItCanFindAllValidWordsFromGivenTiles()
     {
         $ourLetters = ["I","W","T","H","E","E","R"];
@@ -225,6 +230,28 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         $longestWord = $this->gameManagementService->getLongestWordFromLetterSet($ourLetters);
         self::assertEquals(7, strlen($longestWord));
         self::assertEquals('thewier', $longestWord);
+    }
+
+    /**
+     * @return void
+     */
+    public function testItCanGetHighestScoringWord()
+    {
+        self::markTestIncomplete("Depends on future fix.");
+        $ourLetters = ["u","b","m","h","l","r","e"];
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters);
+        die(var_export($validWords, true));
+    }
+
+    public function testItCanMakeShorterValidWordFromGivenLetters()
+    {
+        $knownValidWord = 'humble';
+        $knownValidWord2 = 'blur';
+        $sevenLetters = ["u","b","m","h","l","r","e"];
+
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($sevenLetters);
+        self::assertTrue(in_array($knownValidWord, $validWords));
+        self::assertTrue(in_array($knownValidWord2, $validWords));
     }
 
     //********************* Private Methods ***********************//
