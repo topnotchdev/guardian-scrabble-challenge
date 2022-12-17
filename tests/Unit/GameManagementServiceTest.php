@@ -2,6 +2,8 @@
 
 namespace App\Tests\Unit;
 
+use App\Exception\InvalidUseOfLettersException;
+use App\Exception\TooManyLettersSelectedException;
 use App\Service\GameManagementService;
 use App\Tests\BaseConsoleApplicationTestClass;
 use ReflectionClass;
@@ -61,6 +63,26 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
 
         self::assertIsNumeric($singleLetterScore);
         self::assertEquals(1, $singleLetterScore);
+    }
+
+    /**
+     * @throws TooManyLettersSelectedException
+     */
+    public function testItComplainsIfTooManyChosenLetters()
+    {
+        $ourLetters = ["L","G","K","K","Q","T","Z","X"];
+        self::expectException(TooManyLettersSelectedException::class);
+        $this->gameManagementService->checkSelectedLettersAreValid($ourLetters);
+    }
+
+    /**
+     * @throws TooManyLettersSelectedException
+     */
+    public function testItComplainsIfIllegalUseOfLetters()
+    {
+        $newLetters = ["L","G","K","K","Q","T","Z"];
+        $this->expectException(InvalidUseOfLettersException::class);
+        $this->gameManagementService->checkSelectedLettersAreValid($newLetters);
     }
 
     public function testItCanGetCorrectScoreForWord()

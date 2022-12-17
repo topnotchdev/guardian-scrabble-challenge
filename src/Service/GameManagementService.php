@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Exception\InvalidUseOfLettersException;
+use App\Exception\TooManyLettersSelectedException;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GameManagementService
@@ -47,6 +49,7 @@ class GameManagementService
     ];
 
     public const ALPHA_ONLY_REGEX = "/^[a-zA-Z]+$/";
+    const LETTER_SELECT_ON_GAME_INIT = 7;
 
     private array $dictionary = [];
     private ParameterBagInterface $parameterBag;
@@ -92,6 +95,33 @@ class GameManagementService
     public function fetchScoreForSingleLetter(string $letter): int
     {
         return self::LETTER_SCORES[$letter];
+    }
+
+    /**
+     * @throws TooManyLettersSelectedException
+     * @throws InvalidUseOfLettersException
+     */
+    public function checkSelectedLettersAreValid(array $letters): bool
+    {
+        if (count($letters) < self::LETTER_SELECT_ON_GAME_INIT || count($letters) > self::LETTER_SELECT_ON_GAME_INIT) {
+            throw new TooManyLettersSelectedException("You have picked too few or too many letters. There should be 7 letters on your tray.");
+        }
+
+        $countedLetters = [];
+
+        foreach ($letters as $letter) {
+            $countedLetters[$letter][] = 1;
+        }
+
+        foreach ($countedLetters as $letter => $appearances) {
+            $uppercase = strtoupper($letter);
+            $allowedNumberOfUses = $this->getNumberOfAllowedUsagesForLetter($uppercase);
+            if (count($appearances) > $allowedNumberOfUses) {
+                throw new InvalidUseOfLettersException("Illegal use of the letter $uppercase detected.");
+            }
+        }
+
+        return true;
     }
 
     public function fetchScoreForSingleWord($word): int
@@ -342,5 +372,16 @@ class GameManagementService
         }
 ;
         return $strings;
+    }
+
+    private function getNumberOfAllowedUsagesForLetter(string $uppercase): int
+    {
+        foreach (self::LETTER_COUNTS as $allowedUsages => $letters) {
+            if (in_array($uppercase, $letters, true)) {
+                return $allowedUsages;
+            }
+        }
+
+        return 1;
     }
 }
