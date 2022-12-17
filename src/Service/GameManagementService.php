@@ -101,9 +101,20 @@ class GameManagementService
         $accumulatedPoints = 0;
 
         foreach ($letters as $letter) {
-            $accumulatedPoints += self::LETTER_SCORES[$letter];
+            $accumulatedPoints += self::LETTER_SCORES[strtoupper($letter)];
         }
         return $accumulatedPoints;
+    }
+
+    public function fetchHighestScoreWordFromSet(array $words): string
+    {
+        $wordScores = [];
+
+        foreach ($words as $word) {
+            $wordScores[$word] = $this->fetchScoreForSingleWord($word);
+        }
+
+        return array_search(max($wordScores),$wordScores);
     }
 
     /**
@@ -150,18 +161,34 @@ class GameManagementService
     {
         $lettersCount = count($letters);
 
-        $varyingCountDictionaryWords = $this->loadDictionaryWordsUpToLengthX($lettersCount);
+        // What do we want to achieve?
+        // We have been given x letters
+        // We want to generate as many actual english words as possible using those letters
+        // For example, the letters [urldedl]
+        // Can be used to form [rule/ruled/lure/lured/dred/led/lul/dull/...]
+        // Notice the different sized words? It should matter what words are returned as long as it is made up from some of our letters
+
+        // 1. Get all permutations of seven letters
+        // 2. Get all english words up to x letters long
+        // 3. For each word starting with the shortest word, search through our permutations to see the word is found as a substring within each permutation.
+        // 4. As soon as it is found, stop search and move on to next english word
+        // NB: There are 100k valid dictionary words to go through. This is inefficient...
+
+        $varyingCountDictionaryWords = array_reverse($this->loadDictionaryWordsUpToLengthX($lettersCount), true);
         $invalidatedStringPermutations = $this->makeCharacterArraySimpleStrings($this->getReArrangedLetterArraySets($letters));
 
         $validWords = [];
 
         foreach ($varyingCountDictionaryWords as $key => $xLengthDictionaryWords) {
+
+            $validWords[$key . '-letter-words'] = []; // initialise array
+
             foreach ($xLengthDictionaryWords as $word) {
-                $validWords[$key]= $this->extractWordsContaining($invalidatedStringPermutations, $word);
-            }
-            if ($key === '6-letter-words') {
-                die('stop');
-                //dd($validWords);
+                $validWord = $this->extractWordFromReSequencedCharacters($invalidatedStringPermutations, $word);
+
+                if (!is_null($validWord) && !in_array($validWord, $validWords[$key . '-letter-words'])) {
+                    $validWords[$key . '-letter-words'][] = $validWord;
+                }
             }
         }
 
@@ -179,20 +206,21 @@ class GameManagementService
         return array_search($letterCountBiggestWord, $foundWordsLengthKeys);
     }
 
-    public function flattenMultiLengthWordsArray(array $elements): array
+    public function flattenMultiLengthWordsArray(array $initialArrayElements, array $flattenedArray = []): array
     {
-        $singleLevelElements = [];
-        foreach ($elements as $element) {
+        foreach ($initialArrayElements as $element) {
             if (!is_array($element)) {
-                $singleLevelElements[] = $element;
+                $flattenedArray[] = $element;
                 continue;
             }
-
-            $foundArrayElements = $this->flattenMultiLengthWordsArray($element);
-            $singleLevelElements = array_merge($singleLevelElements, $foundArrayElements);
+            elseif (empty($element)) {
+                continue;
+            }
+            $foundArrayElements = $this->flattenMultiLengthWordsArray($element, $flattenedArray);
+            $flattenedArray = array_merge($flattenedArray, $foundArrayElements);
         }
 
-        return $singleLevelElements;
+        return $flattenedArray;
     }
 
     //********************* Private Methods ***********************//
@@ -241,14 +269,15 @@ class GameManagementService
         return $extraction;
     }
 
-    private function extractWordsContaining(array $strings, string $characters): array
+    private function extractWordFromReSequencedCharacters(array $strings, string $characters): ?string
     {
-        $extraction = [];
+        $extraction = null;
         $characters = strtolower($characters);
 
         foreach ($strings as $string) {
-            if (strpos($string, $characters) !== false && !in_array($string, $extraction)) {
-                $extraction[] = $string;
+            if (strpos($string, $characters) !== false) {
+                $extraction = $characters;
+                break;
             }
         }
 
@@ -275,12 +304,15 @@ class GameManagementService
         return $sets;
     }
 
-    private function loadDictionaryWordsUpToLengthX(int $lettersCount): array
+    private function loadDictionaryWordsUpToLengthX(int $lettersCount, bool $returnOnlyMaxSizeWords = false): array
     {
         $dictionaryWords = [];
         for ($i = $lettersCount; $i > 0; $i--) {
             // get $i letter words from dictionary
-            $dictionaryWords[$i . '-letter-words'] = $this->fetchWordsOfLengthFromDictionary($i);
+            $dictionaryWords[$i] = $this->fetchWordsOfLengthFromDictionary($i);
+            if ($returnOnlyMaxSizeWords) {
+                break;
+            }
         }
 
         return $dictionaryWords;

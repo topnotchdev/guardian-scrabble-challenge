@@ -232,17 +232,6 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         self::assertEquals('thewier', $longestWord);
     }
 
-    /**
-     * @return void
-     */
-    public function testItCanGetHighestScoringWord()
-    {
-        self::markTestIncomplete("Depends on future fix.");
-        $ourLetters = ["u","b","m","h","l","r","e"];
-        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters);
-        die(var_export($validWords, true));
-    }
-
     public function testItCanMakeShorterValidWordFromGivenLetters()
     {
         $knownValidWord = 'humble';
@@ -252,6 +241,23 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
         $validWords = $this->gameManagementService->generateWordsFromGivenLetters($sevenLetters);
         self::assertTrue(in_array($knownValidWord, $validWords));
         self::assertTrue(in_array($knownValidWord2, $validWords));
+    }
+
+    /**
+     * @return void
+     */
+    public function testItCanGetHighestScoringWord()
+    {
+        $expectedHighestScoreWord = 'humbler';
+        $expectedHighestScoreWordValue = 14;
+        $ourLetters = ["u","b","m","h","l","r","e"];
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters);
+        $highestScoreWord = $this->gameManagementService->fetchHighestScoreWordFromSet($validWords);
+
+        self::assertEquals($expectedHighestScoreWord, $highestScoreWord);
+
+        $highestScoreWordValue = $this->gameManagementService->fetchScoreForSingleWord($highestScoreWord);
+        self::assertEquals($expectedHighestScoreWordValue, $highestScoreWordValue);
     }
 
     //********************* Private Methods ***********************//
