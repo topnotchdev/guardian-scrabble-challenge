@@ -56,6 +56,8 @@ class GameManagementService
      * @var array|mixed
      */
     private $wordPermutations = [];
+    private bool $isInitialized = false;
+    private array $bagOfLetters;
 
     /**
      * @throws \Exception
@@ -82,6 +84,10 @@ class GameManagementService
         foreach (array_keys(self::LETTER_SCORES) as $letter) {
             $this->dictionary[$letter] = $this->extractWordsBeginningWith($fileLines, $letter);
         }
+
+        $this->initialiseBagOfLetters();
+
+        $this->isInitialized = true;
     }
 
     public function fetchLetterScoresConfig(): array
@@ -155,17 +161,17 @@ class GameManagementService
             throw new \Exception('You cannot pass zero / null as the number of letters to return!');
         }
 
-        $letters = array_keys(self::LETTER_SCORES);
+        $this->initialiseBagOfLetters();
         $chosenLetters = [];
 
-        if ($noOfLetters > 1) {
-            for ($i = 0; $i < $noOfLetters; $i++) {
-                $randomKey = array_rand($letters);
-                $chosenLetters[] = $letters[$randomKey];
+        for ($i = 0; $i < $noOfLetters; $i++) {
+            $totalLetterCount = count($this->bagOfLetters);
+            $randomBagLetterIndex = array_keys($this->bagOfLetters)[rand(0,$totalLetterCount-1)];
+            $chosenLetters[] = $this->bagOfLetters[$randomBagLetterIndex];
+            unset($this->bagOfLetters[$randomBagLetterIndex]);
+            if ($noOfLetters === 1) {
+                break;
             }
-        } else {
-            $randomKey = array_rand($letters);
-            $chosenLetters[] = $letters[$randomKey];
         }
 
         return $chosenLetters;
@@ -184,11 +190,11 @@ class GameManagementService
         return in_array($word, $wordsBeginningWithChar);
     }
 
-    public function generateWordsFromGivenLetters(array $letters, $returnFirstWordOnly = false): array
+    public function generateWordsFromGivenLetters(array $letters, bool $returnMaxSizeWordsOnly = false, $returnFirstWordOnly = false): array
     {
         $lettersCount = count($letters);
 
-        $varyingCountDictionaryWords = array_reverse($this->loadDictionaryWordsUpToLengthX($lettersCount), true);
+        $varyingCountDictionaryWords = array_reverse($this->loadDictionaryWordsUpToLengthX($lettersCount, $returnMaxSizeWordsOnly), true);
         $invalidatedStringPermutations = $this->makeCharacterArraySimpleStrings($this->getReArrangedLetterArraySets($letters));
 
         $validWords = [];
@@ -206,7 +212,9 @@ class GameManagementService
             }
         }
 
-        return $this->flattenMultiLengthWordsArray($validWords);
+        $flattenedWordList = $this->flattenMultiLengthWordsArray($validWords);
+
+        return ($returnFirstWordOnly) ? [end($flattenedWordList)] : $flattenedWordList;
     }
 
     public function getLongestWordFromLetterSet(array $letters): string
@@ -378,5 +386,18 @@ class GameManagementService
         }
 
         return $flattenedArray;
+    }
+
+    private function initialiseBagOfLetters(): void
+    {
+        if (!$this->isInitialized || !$this->bagOfLetters) {
+            foreach (self::LETTER_COUNTS as $numberInBag => $letters) {
+                foreach ($letters as $letter) {
+                    for ($i = $numberInBag; $i > 0; $i--) {
+                        $this->bagOfLetters[] = $letter;
+                    }
+                }
+            }
+        }
     }
 }

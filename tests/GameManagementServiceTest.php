@@ -31,6 +31,55 @@ class GameManagementServiceTest extends TestCase
         $this->gameManagementService = new GameManagementService();
     }
 
+    /**
+     * @group Base
+     * @return void
+     */
+    public function testItCanFlattenMultiLevelArray()
+    {
+        $array = [
+            'a',
+            'b',
+            'c' => [
+                'd',
+                'e',
+                'f',
+            ],
+        ];
+
+        $flattenedArray = $this->gameManagementService->flattenMultiLengthWordsArray($array);
+
+        self::assertTrue(!isset($flattenedArray['c']));
+        self::assertCount(5, $flattenedArray);
+        self::assertEquals('f', $flattenedArray[4]);
+    }
+
+    /**
+     * @group Base
+     * @throws TooManyLettersSelectedException|InvalidUseOfLettersException
+     */
+    public function testItComplainsIfTooManyChosenLetters()
+    {
+        $ourLetters = ["L","G","K","K","Q","T","Z","X"];
+        self::expectException(TooManyLettersSelectedException::class);
+        $this->gameManagementService->checkSelectedLettersAreValid($ourLetters);
+    }
+
+    /**
+     * @group Base
+     * @throws TooManyLettersSelectedException
+     */
+    public function testItComplainsIfIllegalUseOfLetters()
+    {
+        $newLetters = ["L","G","K","K","Q","T","Z"];
+        $this->expectException(InvalidUseOfLettersException::class);
+        $this->gameManagementService->checkSelectedLettersAreValid($newLetters);
+    }
+
+    /**
+     * @group Task1
+     * @return void
+     */
     public function testItCanRetrieveListOfIndividualLetterScores(): void
     {
         $letterScoresArray = $this->gameManagementService->fetchLetterScoresConfig();
@@ -40,6 +89,10 @@ class GameManagementServiceTest extends TestCase
         self::assertCount(26, $letterScoresArray);
     }
 
+    /**
+     * @group Task1
+     * @return void
+     */
     public function testItLetterScoresConfigHasCorrectScores()
     {
         $letterScoresArray = $this->gameManagementService->fetchLetterScoresConfig();
@@ -53,6 +106,25 @@ class GameManagementServiceTest extends TestCase
         }
     }
 
+    /**
+     * @group Task1
+     * @throws \ReflectionException
+     */
+    public function testItCanGetCharAtIndexN()
+    {
+        $index = 3;
+        $word = 'figure';
+        $expectedChar = 'u';
+
+        $method = self::getMethod('getCharAtIndex');
+        $actualChar = $method->invokeArgs($this->gameManagementService, [$word, $index]);
+        self::assertEquals($expectedChar, $actualChar);
+    }
+
+    /**
+     * @group Task1
+     * @return void
+     */
     public function testItCanGetScoreForASingleLetter()
     {
         $singleLetterScore = $this->gameManagementService->fetchScoreForSingleLetter("A");
@@ -62,25 +134,9 @@ class GameManagementServiceTest extends TestCase
     }
 
     /**
-     * @throws TooManyLettersSelectedException|InvalidUseOfLettersException
+     * @group Task1
+     * @return void
      */
-    public function testItComplainsIfTooManyChosenLetters()
-    {
-        $ourLetters = ["L","G","K","K","Q","T","Z","X"];
-        self::expectException(TooManyLettersSelectedException::class);
-        $this->gameManagementService->checkSelectedLettersAreValid($ourLetters);
-    }
-
-    /**
-     * @throws TooManyLettersSelectedException
-     */
-    public function testItComplainsIfIllegalUseOfLetters()
-    {
-        $newLetters = ["L","G","K","K","Q","T","Z"];
-        $this->expectException(InvalidUseOfLettersException::class);
-        $this->gameManagementService->checkSelectedLettersAreValid($newLetters);
-    }
-
     public function testItCanGetCorrectScoreForWord()
     {
         $word = "GUARDIAN";
@@ -100,6 +156,35 @@ class GameManagementServiceTest extends TestCase
     }
 
     /**
+     * @group Task2
+     * @throws \ReflectionException
+     */
+    public function testItAllowsAlphabeticalCharactersOnly()
+    {
+        $word1 = 'peac£';
+        $word2 = 'peace';
+
+        $method = self::getMethod('hasAlphabeticalCharsOnly');
+        $assertion1 = $method->invokeArgs($this->gameManagementService, [$word1]);
+        self::assertFalse($assertion1);
+        $assertion2 = $method->invokeArgs($this->gameManagementService, [$word2]);
+        self::assertTrue($assertion2);
+    }
+
+    /**
+     * @group Task2
+     * @throws \Exception
+     */
+    public function testItCanRandomlySelectOneLetter()
+    {
+        $oneLetterArray = $this->gameManagementService->chooseRandomLetters(1);
+
+        self::assertCount(1, $oneLetterArray);
+        self::assertMatchesRegularExpression("/^[a-zA-Z]{1}$/", $oneLetterArray[0]);
+    }
+
+    /**
+     * @group Task2
      * @throws \Exception
      */
     public function testItCanRandomlySelectSevenLetters()
@@ -114,46 +199,19 @@ class GameManagementServiceTest extends TestCase
     }
 
     /**
+     * @group Task3
+     * @return void
      * @throws \Exception
      */
-    public function testItCanRandomlySelectOneLetter()
+    public function testItCanChooseRandomLettersFromBag()
     {
-        $oneLetterArray = $this->gameManagementService->chooseRandomLetters(1);
-
-        self::assertCount(1, $oneLetterArray);
-        self::assertMatchesRegularExpression("/^[a-zA-Z]{1}$/", $oneLetterArray[0]);
+            $ourLetters = $this->gameManagementService->chooseRandomLetters(7);
+            self::assertCount(7, $ourLetters);
+            self::assertTrue($this->gameManagementService->checkSelectedLettersAreValid($ourLetters));
     }
 
     /**
-     * @throws \ReflectionException
-     */
-    public function testItCanValidateAlphabeticalCharactersOnly()
-    {
-        $word1 = 'peac£';
-        $word2 = 'peace';
-
-        $method = self::getMethod('hasAlphabeticalCharsOnly');
-        $assertion1 = $method->invokeArgs($this->gameManagementService, [$word1]);
-        self::assertFalse($assertion1);
-        $assertion2 = $method->invokeArgs($this->gameManagementService, [$word2]);
-        self::assertTrue($assertion2);
-    }
-
-    /**
-     * @throws \ReflectionException
-     */
-    public function testItCanGetCharAtIndexN()
-    {
-        $index = 3;
-        $word = 'figure';
-        $expectedChar = 'u';
-
-        $method = self::getMethod('getCharAtIndex');
-        $actualChar = $method->invokeArgs($this->gameManagementService, [$word, $index]);
-        self::assertEquals($expectedChar, $actualChar);
-    }
-
-    /**
+     * @group Task4
      * @throws \ReflectionException
      */
     public function testItCanExtractWordsBeginningWith()
@@ -182,6 +240,10 @@ class GameManagementServiceTest extends TestCase
         self::assertCount(7, $extractedWords);
     }
 
+    /**
+     * @group Task4
+     * @return void
+     */
     public function testItCanValidateDictionaryWord()
     {
         $word1 = 'peace';
@@ -195,38 +257,18 @@ class GameManagementServiceTest extends TestCase
     }
 
     /**
+     * @group Task4
      * @throws \Exception
      */
     public function testItCanGenerateAValidWordFromGivenTiles()
     {
         $ourLetters = ["L","G","U","W","Q","T","Z"];
-        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
-        self::assertEquals("ut", $validWords[0]);
+        $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters,false,true);
+        self::assertEquals("lutz", $validWords[0]);
     }
 
     /**
-     * @return void
-     */
-    public function testItCanFlattenMultiLevelArray()
-    {
-        $array = [
-            'a',
-            'b',
-            'c' => [
-                'd',
-                'e',
-                'f',
-            ],
-        ];
-
-        $flattenedArray = $this->gameManagementService->flattenMultiLengthWordsArray($array);
-
-        self::assertTrue(!isset($flattenedArray['c']));
-        self::assertCount(5, $flattenedArray);
-        self::assertEquals('f', $flattenedArray[4]);
-    }
-
-    /**
+     * @group Task4
      * @return void
      */
     public function testItCanFindAllValidWordsFromGivenTiles()
@@ -240,6 +282,7 @@ class GameManagementServiceTest extends TestCase
     }
 
     /**
+     * @group Task5
      * @throws \Exception
      */
     public function testItFindsLongestValidWordFromGivenTiles()
@@ -250,6 +293,10 @@ class GameManagementServiceTest extends TestCase
         self::assertEquals('thewier', $longestWord);
     }
 
+    /**
+     * @group Task5
+     * @return void
+     */
     public function testItCanMakeShorterValidWordFromGivenLetters()
     {
         $knownValidWord = 'humble';
@@ -262,6 +309,7 @@ class GameManagementServiceTest extends TestCase
     }
 
     /**
+     * @group Task6
      * @return void
      */
     public function testItCanGetHighestScoringWord()
@@ -276,6 +324,17 @@ class GameManagementServiceTest extends TestCase
 
         $highestScoreWordValue = $this->gameManagementService->fetchScoreForSingleWord($highestScoreWord);
         self::assertEquals($expectedHighestScoreWordValue, $highestScoreWordValue);
+    }
+
+    /**
+     * @group Task6
+     * @return void
+     */
+    public function testItCanGetAllValidSevenLetterWords()
+    {
+        $ourLetters = ["g","i","t","a","n","a","s"];
+        $validSevenLetterWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
+        self::assertCount(2,$validSevenLetterWords);
     }
 
     //********************* Private Methods ***********************//
