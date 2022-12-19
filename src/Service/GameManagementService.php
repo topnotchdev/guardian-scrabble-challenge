@@ -4,7 +4,6 @@ namespace App\Service;
 
 use App\Exception\InvalidUseOfLettersException;
 use App\Exception\TooManyLettersSelectedException;
-use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 
 class GameManagementService
 {
@@ -52,7 +51,7 @@ class GameManagementService
     const LETTER_SELECT_ON_GAME_INIT = 7;
 
     private array $dictionary = [];
-    private ParameterBagInterface $parameterBag;
+
     /**
      * @var array|mixed
      */
@@ -61,9 +60,8 @@ class GameManagementService
     /**
      * @throws \Exception
      */
-    public function __construct(ParameterBagInterface $parameterBag)
+    public function __construct()
     {
-        $this->parameterBag = $parameterBag;
         $this->init();
     }
 
@@ -74,8 +72,7 @@ class GameManagementService
     {
         // load dictionary words from file
         $DS = DIRECTORY_SEPARATOR;
-        $filename = $this->parameterBag->get('kernel.project_dir') . $DS .  'public' . $DS . 'data' . $DS . 'dictionary.txt';
-
+        $filename =  realpath('./public' . $DS . 'data' . $DS . 'dictionary.txt'); // from project root
         if (!file_exists($filename)) {
             throw new \Exception('This service is temporarily unavailable due to a missing dependency!');
         }
@@ -191,19 +188,6 @@ class GameManagementService
     {
         $lettersCount = count($letters);
 
-        // What do we want to achieve?
-        // We have been given x letters
-        // We want to generate as many actual english words as possible using those letters
-        // For example, the letters [urldedl]
-        // Can be used to form [rule/ruled/lure/lured/dred/led/lul/dull/...]
-        // Notice the different sized words? It should matter what words are returned as long as it is made up from some of our letters
-
-        // 1. Get all permutations of seven letters
-        // 2. Get all english words up to x letters long
-        // 3. For each word starting with the shortest word, search through our permutations to see the word is found as a substring within each permutation.
-        // 4. As soon as it is found, stop search and move on to next english word
-        // NB: There are 100k valid dictionary words to go through. This is inefficient...
-
         $varyingCountDictionaryWords = array_reverse($this->loadDictionaryWordsUpToLengthX($lettersCount), true);
         $invalidatedStringPermutations = $this->makeCharacterArraySimpleStrings($this->getReArrangedLetterArraySets($letters));
 
@@ -246,8 +230,8 @@ class GameManagementService
             elseif (empty($element)) {
                 continue;
             }
-            $foundArrayElements = $this->flattenMultiLengthWordsArray($element, $flattenedArray);
-            $flattenedArray = array_merge($flattenedArray, $foundArrayElements);
+            $innerResults = $this->flattenMultiLengthWordsArray($element, $flattenedArray);
+            $flattenedArray = $this->mergeNewResultsWithArray($flattenedArray, $innerResults);
         }
 
         return $flattenedArray;
@@ -383,5 +367,16 @@ class GameManagementService
         }
 
         return 1;
+    }
+
+    private function mergeNewResultsWithArray($flattenedArray, array $innerResults)
+    {
+        foreach ($innerResults as $innerResult) {
+            if (!in_array($innerResult, $flattenedArray)) {
+                $flattenedArray[] = $innerResult;
+            }
+        }
+
+        return $flattenedArray;
     }
 }

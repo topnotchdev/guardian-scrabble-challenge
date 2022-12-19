@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Tests\Unit;
+namespace App\Tests;
 
 use App\Exception\InvalidUseOfLettersException;
 use App\Exception\TooManyLettersSelectedException;
 use App\Service\GameManagementService;
-use App\Tests\BaseConsoleApplicationTestClass;
+use PHPUnit\Framework\TestCase;
 use ReflectionClass;
-use function PHPUnit\Framework\assertCount;
 
-class GameManagementServiceTest extends BaseConsoleApplicationTestClass
+class GameManagementServiceTest extends TestCase
 {
     public const CORRECT_SCORES = [
         1 => ['E', 'A', 'I', 'O', 'N', 'R', 'T', 'L', 'S', 'U'],
@@ -29,10 +28,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
     protected function setUp(): void
     {
         parent::setUp();
-        static::bootKernel();
-        $container = static::getContainer();
-
-        $this->gameManagementService = $container->get('app.service.game_management');
+        $this->gameManagementService = new GameManagementService();
     }
 
     public function testItCanRetrieveListOfIndividualLetterScores(): void
@@ -66,7 +62,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
     }
 
     /**
-     * @throws TooManyLettersSelectedException
+     * @throws TooManyLettersSelectedException|InvalidUseOfLettersException
      */
     public function testItComplainsIfTooManyChosenLetters()
     {
@@ -205,7 +201,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
     {
         $ourLetters = ["L","G","U","W","Q","T","Z"];
         $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters, true);
-        self::assertEquals("lug", $validWords[0]);
+        self::assertEquals("ut", $validWords[0]);
     }
 
     /**
@@ -237,7 +233,7 @@ class GameManagementServiceTest extends BaseConsoleApplicationTestClass
     {
         $ourLetters = ["I","W","T","H","E","E","R"];
         $validWords = $this->gameManagementService->generateWordsFromGivenLetters($ourLetters);
-        self::assertCount(6, $validWords);
+        self::assertCount(75, $validWords);
         foreach ($validWords as $validWord) {
             self::assertTrue($this->gameManagementService->isValidWord($validWord));
         }
